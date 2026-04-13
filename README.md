@@ -129,22 +129,36 @@ python mqtt_subscriber.py
 
 ## Uso con MQTTX (simulador de sensor)
 
-1. Descargar [MQTTX](https://mqttx.app/)
-2. Crear nueva conexión:
-   - **Host:** `broker.emqx.io`
-   - **Port:** `1883`
-   - **Protocol:** MQTT
-3. Publicar en el topic `temperatura_prueba` con alguno de estos payloads:
+> **Importante:** el `mqtt_subscriber.py` se conecta al broker usando **WebSocket sobre SSL (WSS)**, por lo que la configuración en MQTTX debe coincidir exactamente.
 
+1. Descargar [MQTTX](https://mqttx.app/)
+2. Crear nueva conexión con estos parámetros:
+
+| Campo | Valor |
+|-------|-------|
+| **Host** | `broker.emqx.io` |
+| **Port** | `8084` |
+| **Protocol** | `mqtts` (MQTT over WebSocket SSL) |
+| **Client ID** | cualquiera, ej: `mqttx_test_01` |
+| **SSL/TLS** | activado |
+| **Username** | *(vacío)* |
+| **Password** | *(vacío)* |
+
+3. Publicar en el topic **`temperatura_prueba`** con alguno de estos payloads:
+
+**Formato JSON (recomendado):**
 ```json
 {"sensor_id": "sensor_01", "valor": 25.3}
 ```
 
+**Formato simple (solo el número):**
 ```
 25.3
 ```
 
 4. Abrir el dashboard en `http://127.0.0.1:8000/` y ver el valor actualizarse en tiempo real.
+
+> **Nota:** Si usás el formato simple, el sistema asigna automáticamente `sensor_01` como ID del sensor.
 
 ---
 
@@ -171,5 +185,19 @@ Accesible en `http://127.0.0.1:8000/`
 
 - Muestra el valor de temperatura actual en tiempo real
 - Cambia de color según el rango (azul frío / rojo caliente)
+- **Gráfico de línea** con las últimas 5 lecturas, actualizado en tiempo real vía WebSocket
 - Historial de las últimas 20 lecturas
 - Indicador de estado de conexión WebSocket con reconexión automática
+
+---
+
+## Notas técnicas
+
+| Detalle | Valor |
+|---------|-------|
+| Broker MQTT | `broker.emqx.io` |
+| Puerto subscriber | `8084` (WebSocket SSL) |
+| Topic | `temperatura_prueba` |
+| Channel Layer | `InMemoryChannelLayer` (desarrollo) |
+| Puerto Django | `8000` |
+| Gráfico | Chart.js v4.4.0 (CDN) |
