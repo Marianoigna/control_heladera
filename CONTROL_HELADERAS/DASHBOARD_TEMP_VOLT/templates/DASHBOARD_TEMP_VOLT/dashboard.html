@@ -254,7 +254,8 @@
         grafico.update();
     }
 
-    const wsUrl = `ws://${window.location.host}/ws/temperatura/`;
+    const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsUrl = `${wsProto}://${window.location.host}/ws/temperatura/`;
     let socket;
 
     function conectar() {
@@ -335,7 +336,8 @@
         graficoVolt.update();
     }
 
-    const wsVoltUrl = `ws://${window.location.host}/ws/voltaje/`;
+    const wsVoltProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const wsVoltUrl = `${wsVoltProto}://${window.location.host}/ws/voltaje/`;
     let socketVolt;
 
     function conectarVolt() {
