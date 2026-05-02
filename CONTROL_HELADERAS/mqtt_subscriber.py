@@ -98,18 +98,29 @@ def on_message(client, userdata, msg):
 
 
 def main():
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, transport='websockets')
-    client.tls_set()  # SSL para WSS (puerto 8084)
+    import time
+    retry_delay = 5
 
-    if MQTT_USER:
-        client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
+    while True:
+        try:
+            client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, transport='websockets')
+            client.tls_set()  # SSL para WSS (puerto 8084)
 
-    client.on_connect = on_connect
-    client.on_message = on_message
+            if MQTT_USER:
+                client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
 
-    print(f'[MQTT] Conectando a {MQTT_BROKER}:{MQTT_PORT} ...')
-    client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
-    client.loop_forever()
+            client.on_connect = on_connect
+            client.on_message = on_message
+
+            print(f'[MQTT] Conectando a {MQTT_BROKER}:{MQTT_PORT} ...')
+            client.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
+            client.loop_forever()
+
+        except Exception as e:
+            print(f'[MQTT] Error de conexión: {type(e).__name__}: {e}')
+            print(f'[MQTT] Reintentando en {retry_delay}s...')
+            time.sleep(retry_delay)
+            retry_delay = min(retry_delay * 2, 60)
 
 
 if __name__ == '__main__':
