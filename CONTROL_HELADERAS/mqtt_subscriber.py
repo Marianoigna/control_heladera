@@ -2,7 +2,7 @@
 mqtt_subscriber.py
 ==================
 Se conecta al broker MQTT público de EMQX (broker.emqx.io),
-escucha el topic 'temperatura_prueba' en el puerto 1883
+escucha los topics 'temperatura_prueba' y 'voltaje_prueba' en el puerto 8084 (WebSocket SSL)
 y reenvía cada lectura a la API REST de Django para que
 se guarde en SQLite3 y se actualice en tiempo real vía WebSocket.
 
@@ -11,8 +11,8 @@ CONFIGURACIÓN EN MQTTX (aplicación de escritorio):
 ──────────────────────────────────────────────────────────────
   1. Nueva conexión:
        - Host:     broker.emqx.io
-       - Port:     1883
-       - Protocol: MQTT
+       - Port:     8084
+       - Protocol: MQTT over WebSocket SSL (WSS)
        - Client ID: (cualquiera, ej: mqttx_test_01)
        - Sin usuario ni contraseña
 
@@ -40,46 +40,52 @@ import requests
 import paho.mqtt.client as mqtt
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
-MQTT_BROKER   = 'broker.emqx.io'     # Broker público EMQX — sin registro
-MQTT_PORT     = 8084                 # Puerto WebSocket SSL (WSS)
-MQTT_TOPIC    = 'temperatura_prueba' # Topic que escucha este subscriber
-MQTT_USER     = ''                   # Sin autenticación en broker público
-MQTT_PASSWORD = ''
+MQTT_BROKER        = 'broker.emqx.io'
+MQTT_PORT          = 8084
+MQTT_TOPIC_TEMP    = 'temperatura_prueba'
+MQTT_TOPIC_VOLT    = 'voltaje_prueba'
+MQTT_USER          = ''
+MQTT_PASSWORD      = ''
 
-API_URL       = 'http://127.0.0.1:8000/api/temperatura/'
-SENSOR_ID     = 'sensor_01'          # ID por defecto si el payload no lo incluye
+API_URL_TEMP       = 'http://127.0.0.1:8000/api/temperatura/'
+API_URL_VOLT       = 'http://127.0.0.1:8000/api/voltaje/'
+SENSOR_ID_TEMP     = 'sensor_01'
+SENSOR_ID_VOLT     = 'voltaje_01'
 # ─────────────────────────────────────────────────────────────────────────────
 
 
 def on_connect(client, userdata, flags, reason_code, properties):
     print(f'[MQTT] Conectado al broker {MQTT_BROKER}:{MQTT_PORT}')
-    client.subscribe(MQTT_TOPIC)
-    print(f'[MQTT] Suscrito al topic: {MQTT_TOPIC}')
+    client.subscribe(MQTT_TOPIC_TEMP)
+    client.subscribe(MQTT_TOPIC_VOLT)
+    print(f'[MQTT] Suscrito a: {MQTT_TOPIC_TEMP}, {MQTT_TOPIC_VOLT}')
 
 
 def on_message(client, userdata, msg):
+    topic   = msg.topic
     payload = msg.payload.decode('utf-8').strip()
-    print(f'[MQTT] Mensaje recibido: {payload}')
+    print(f'[MQTT] [{topic}] {payload}')
+
+    is_temp = (topic == MQTT_TOPIC_TEMP)
+    api_url   = API_URL_TEMP if is_temp else API_URL_VOLT
+    sensor_id = SENSOR_ID_TEMP if is_temp else SENSOR_ID_VOLT
+    unidad    = '°C' if is_temp else 'V'
 
     try:
-        # El sensor puede enviar solo el número ("23.5")
-        # o un JSON ({"valor": 23.5, "sensor_id": "sensor_01"})
         try:
             data = json.loads(payload)
             valor     = float(data.get('valor', data))
-            sensor_id = data.get('sensor_id', SENSOR_ID)
+            sensor_id = data.get('sensor_id', sensor_id)
         except (json.JSONDecodeError, TypeError):
-            valor     = float(payload)
-            sensor_id = SENSOR_ID
+            valor = float(payload)
 
-        # Enviar a la API REST de Django
-        response = requests.post(API_URL, json={
+        response = requests.post(api_url, json={
             'valor':     valor,
             'sensor_id': sensor_id,
         }, timeout=5)
 
         if response.status_code == 201:
-            print(f'[API]  ✔ Guardado: {sensor_id} → {valor}°C')
+            print(f'[API]  ✔ Guardado: {sensor_id} → {valor}{unidad}')
         else:
             print(f'[API]  ✘ Error {response.status_code}: {response.text}')
 
@@ -91,7 +97,7 @@ def on_message(client, userdata, msg):
 
 def main():
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, transport='websockets')
-    client.tls_set()  # SSL requerido para puerto 8084 (WSS)
+    client.tls_set()  # SSL para WSS (puerto 8084)
 
     if MQTT_USER:
         client.username_pw_set(MQTT_USER, MQTT_PASSWORD)

@@ -3,4 +3,5 @@ from . import consumers
 
 websocket_urlpatterns = [
     re_path(r'ws/temperatura/$', consumers.TemperaturaConsumer.as_asgi()),
+    re_path(r'ws/voltaje/$', consumers.VoltajeConsumer.as_asgi()),
 ]
