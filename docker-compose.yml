@@ -1,0 +1,25 @@
+services:
+
+  web:
+    build: .
+    command: >
+      sh -c "cd CONTROL_HELADERAS &&
+             python manage.py migrate --noinput &&
+             daphne -b 0.0.0.0 -p 8000 ERROR_PROOFING.asgi:application"
+    ports:
+      - "8000:8000"
+    volumes:
+      - sqlite_data:/app/CONTROL_HELADERAS
+    environment:
+      - DJANGO_SETTINGS_MODULE=ERROR_PROOFING.settings
+
+  mqtt:
+    build: .
+    command: python CONTROL_HELADERAS/mqtt_subscriber.py
+    depends_on:
+      - web
+    environment:
+      - API_BASE_URL=http://web:8000
+
+volumes:
+  sqlite_data:

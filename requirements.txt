@@ -4,6 +4,7 @@ channels
 daphne
 paho-mqtt
 requests
+whitenoise
 asgiref
 twisted
 autobahn

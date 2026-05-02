@@ -36,6 +36,7 @@ Uso:
 """
 
 import json
+import os
 import requests
 import paho.mqtt.client as mqtt
 
@@ -47,8 +48,9 @@ MQTT_TOPIC_VOLT    = 'voltaje_prueba'
 MQTT_USER          = ''
 MQTT_PASSWORD      = ''
 
-API_URL_TEMP       = 'http://127.0.0.1:8000/api/temperatura/'
-API_URL_VOLT       = 'http://127.0.0.1:8000/api/voltaje/'
+_API_BASE          = os.environ.get('API_BASE_URL', 'http://127.0.0.1:8000')
+API_URL_TEMP       = f'{_API_BASE}/api/temperatura/'
+API_URL_VOLT       = f'{_API_BASE}/api/voltaje/'
 SENSOR_ID_TEMP     = 'sensor_01'
 SENSOR_ID_VOLT     = 'voltaje_01'
 # ─────────────────────────────────────────────────────────────────────────────
