@@ -2,6 +2,7 @@
 set -e
 
 export DJANGO_SETTINGS_MODULE=ERROR_PROOFING.settings
+export MQTT_AUTOSTART=1
 
 cd CONTROL_HELADERAS
 python manage.py collectstatic --noinput
